@@ -10,24 +10,28 @@ def train():
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    # Enhanced transformations with slight augmentation
+    # Basic transformations - removing augmentation for single epoch training
     transform = transforms.Compose([
-        transforms.RandomAffine(degrees=5, translate=(0.05, 0.05)),
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,)),
     ])
     
     # Load MNIST dataset
     train_dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
+    # Increased batch size for faster convergence
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=128, shuffle=True)
     
     # Initialize model
     model = SimpleCNN().to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=0.001, weight_decay=1e-4)
+    # Higher learning rate and momentum for faster convergence
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-4)
     
-    # Cosine annealing scheduler
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader))
+    # Step LR scheduler for better convergence
+    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, 
+                                            max_lr=0.01,
+                                            steps_per_epoch=len(train_loader),
+                                            epochs=1)
     
     # Training loop
     num_epochs = 1
@@ -47,7 +51,6 @@ def train():
             
             # Backward pass
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             scheduler.step()
             
