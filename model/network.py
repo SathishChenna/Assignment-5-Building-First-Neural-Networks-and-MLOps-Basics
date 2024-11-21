@@ -18,3 +18,9 @@ class SimpleCNN(nn.Module):
         x = torch.relu(self.fc1(x))
         x = self.fc2(x)
         return x 
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters())
+
+model = SimpleCNN()
+print(f"Total parameters: {count_parameters(model)}") 
