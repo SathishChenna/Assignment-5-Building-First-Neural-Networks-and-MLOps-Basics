@@ -3,45 +3,47 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
 from model.network import SimpleCNN
-from datetime import datetime
-import os
 
 def train():
     # Set device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    # Load MNIST dataset
+    # Define transformations
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
     ])
     
-    train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
+    # Load MNIST dataset
+    train_dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
     
     # Initialize model
     model = SimpleCNN().to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters())
     
-    # Train for 1 epoch
-    model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        data, target = data.to(device), target.to(device)
-        optimizer.zero_grad()
-        output = model(data)
-        loss = criterion(output, target)
-        loss.backward()
-        optimizer.step()
-        
-        if batch_idx % 100 == 0:
-            print(f'Batch {batch_idx}/{len(train_loader)}, Loss: {loss.item():.4f}')
+    # Training loop
+    num_epochs = 2  # Reduced for CI/CD purposes
+    for epoch in range(num_epochs):
+        model.train()
+        for batch_idx, (data, target) in enumerate(train_loader):
+            data, target = data.to(device), target.to(device)
+            optimizer.zero_grad()
+            output = model(data)
+            loss = criterion(output, target)
+            loss.backward()
+            optimizer.step()
+            
+            if batch_idx % 100 == 0:
+                print(f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} '
+                      f'({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
     
-    # Save model with timestamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    if not os.path.exists('saved_models'):
-        os.makedirs('saved_models')
-    torch.save(model.state_dict(), f'saved_models/model_{timestamp}.pth')
-    
-if __name__ == "__main__":
+    # Save the model
+    torch.save(model.state_dict(), 'saved_models/model.pth')
+
+if __name__ == '__main__':
+    # Create directory for saved models if it doesn't exist
+    import os
+    os.makedirs('saved_models', exist_ok=True)
     train() 
