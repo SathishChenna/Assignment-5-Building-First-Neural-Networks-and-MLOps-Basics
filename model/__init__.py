@@ -1,1 +1,3 @@
-# Empty file to make the directory a Python package 
+from .network import SimpleCNN, count_parameters
+
+__all__ = ['SimpleCNN', 'count_parameters'] 
