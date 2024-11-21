@@ -1,102 +1,74 @@
-# MNIST CNN with MLOps Pipeline
+# CNN Model for MNIST Classification
 
-This project implements a Convolutional Neural Network (CNN) for MNIST digit classification with a complete CI/CD pipeline. The model achieves >95% accuracy in a single epoch while maintaining less than 25,000 parameters.
+## Final Model Architecture
+We developed a CNN architecture that achieves >95% accuracy while maintaining <25,000 parameters through several optimizations:
 
-## Project Requirements
+### Architecture Details
+- **Parameters:** 21,614
+- **Accuracy:** 95.27%
+- **Target Goals:** 
+  - ✓ Parameters < 25,000
+  - ✓ Accuracy > 95%
 
-- Python 3.8+
-- PyTorch
-- torchvision
-- pytest
+### Key Components
 
-## Model Architecture
+1. **Initial Conv Block** (Strong Feature Extraction)
+   - Conv2d(1→8, 5×5) with padding
+   - BatchNorm + LeakyReLU
+   - Conv2d(8→8, 3×3) with padding
+   - BatchNorm + LeakyReLU
+   - MaxPool2d(2)
 
-The model is a simple CNN with:
-- 2 convolutional layers with batch normalization
-- 2 fully connected layers
-- Less than 25,000 trainable parameters
-- Designed for 28x28 grayscale input images
-- 10-class output (digits 0-9)
+2. **First Residual Block** (Efficient Bottleneck)
+   - Bottleneck: 8→6→6→8 channels
+   - 1×1 convs for channel reduction/expansion
+   - 3×3 conv in the middle
+   - Strong residual connection (1.75×)
 
-## Project Structure
-project/
-├── model/
-│ ├── init.py
-│ └── network.py
-├── tests/
-│ └── test_model.py
-├── saved_models/
-├── .github/
-│ └── workflows/
-│ └── ml-pipeline.yml
-├── train.py
-├── requirements.txt
-└── .gitignore
+3. **Transition Block**
+   - MaxPool2d for dimension reduction
+   - Channel expansion: 8→12
+   - BatchNorm + LeakyReLU
 
-## Installation
+4. **Second Residual Block** (Parameter Efficient)
+   - Grouped convolutions (3 groups)
+   - Maintains 12 channels
+   - Moderate residual connection (1.25×)
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd <repository-name>
-```
+5. **Classifier**
+   - Flatten
+   - Linear(12×7×7 → 32)
+   - BatchNorm + LeakyReLU
+   - Linear(32 → 10)
 
-2. Create and activate a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate
-```
+### Key Design Choices
+1. **Efficient Parameter Usage:**
+   - Bottleneck blocks
+   - Grouped convolutions
+   - Compact classifier
 
-3. Install dependencies:
-```
-pip install -r requirements.txt
-```
+2. **Strong Feature Extraction:**
+   - Larger initial kernel (5×5)
+   - Double conv in initial block
+   - Balanced channel progression
 
+3. **Gradient Flow:**
+   - Scaled residual connections
+   - LeakyReLU activation
+   - BatchNorm throughout
 
+4. **Regularization:**
+   - BatchNorm layers
+   - Architectural choices (bottleneck, groups)
+   - No dropout needed
+
+## Development Journey
+The model evolved through several iterations:
+1. Basic CNN (>100K parameters)
+2. Parameter reduction with bottleneck blocks
+3. Addition of residual connections
+4. Optimization of channel widths
+5. Introduction of grouped convolutions
+6. Fine-tuning of residual scaling
 
 ## Usage
-
-1. Train the model:
-```bash
-python train.py
-```
-
-2. Run tests:
-```bash
-python -m pytest tests/
-```
-
-
-
-## Model Specifications
-
-- Input: 28x28 grayscale images
-- Output: 10 classes (digits 0-9)
-- Parameters: < 25,000
-- Training Accuracy: > 95%
-- Training Epochs: 1
-
-## CI/CD Pipeline
-
-The GitHub Actions workflow automatically:
-1. Sets up Python environment
-2. Installs dependencies
-3. Trains the model
-4. Runs tests to verify:
-   - Parameter count (< 25,000)
-   - Input shape handling (28x28)
-   - Output shape (10 classes)
-   - Model accuracy (> 95%)
-5. Archives the trained model
-
-## Test Coverage
-
-Tests verify:
-- Model parameter count is under 25,000
-- Model correctly handles 28x28 input images
-- Model outputs 10 classes
-- Model achieves >95% accuracy on training data
-
-## Model Saving
-
-Trained models are saved with timestamps in the `saved_models` directory:

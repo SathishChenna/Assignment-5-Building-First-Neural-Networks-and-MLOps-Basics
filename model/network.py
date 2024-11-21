@@ -4,51 +4,51 @@ class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
         
-        # Initial conv blocks - stronger early feature extraction
+        # Initial conv blocks - slightly stronger
         self.conv1 = nn.Sequential(
-            nn.Conv2d(1, 8, kernel_size=5, padding=2),  # Stronger first layer
+            nn.Conv2d(1, 8, kernel_size=5, padding=2),  # Keep 8 channels
             nn.BatchNorm2d(8),
             nn.LeakyReLU(0.1),
-            nn.Conv2d(8, 8, kernel_size=3, padding=1),  # Extra early conv
+            nn.Conv2d(8, 8, kernel_size=3, padding=1),
             nn.BatchNorm2d(8),
             nn.LeakyReLU(0.1),
-            nn.MaxPool2d(2)  # 28x28 -> 14x14
+            nn.MaxPool2d(2)
         )
         
-        # First residual block (slimmer)
+        # First residual block (efficient bottleneck)
         self.res1 = nn.Sequential(
-            nn.Conv2d(8, 6, kernel_size=1),  # Reduce channels
+            nn.Conv2d(8, 6, kernel_size=1),
             nn.BatchNorm2d(6),
             nn.LeakyReLU(0.1),
             nn.Conv2d(6, 6, kernel_size=3, padding=1),
             nn.BatchNorm2d(6),
             nn.LeakyReLU(0.1),
-            nn.Conv2d(6, 8, kernel_size=1),  # Back to 8
+            nn.Conv2d(6, 8, kernel_size=1),
             nn.BatchNorm2d(8)
         )
         
         # Transition block
         self.trans1 = nn.Sequential(
             nn.LeakyReLU(0.1),
-            nn.MaxPool2d(2),  # 14x14 -> 7x7
-            nn.Conv2d(8, 10, kernel_size=1),
-            nn.BatchNorm2d(10),
+            nn.MaxPool2d(2),
+            nn.Conv2d(8, 12, kernel_size=1),  # Increased to 12
+            nn.BatchNorm2d(12),
             nn.LeakyReLU(0.1)
         )
         
-        # Second residual block (efficient)
+        # Second residual block (grouped conv)
         self.res2 = nn.Sequential(
-            nn.Conv2d(10, 10, kernel_size=3, padding=1, groups=2),  # Grouped conv
-            nn.BatchNorm2d(10),
+            nn.Conv2d(12, 12, kernel_size=3, padding=1, groups=3),  # 4 channels per group
+            nn.BatchNorm2d(12),
             nn.LeakyReLU(0.1),
-            nn.Conv2d(10, 10, kernel_size=3, padding=1, groups=2),  # Grouped conv
-            nn.BatchNorm2d(10)
+            nn.Conv2d(12, 12, kernel_size=3, padding=1, groups=3),
+            nn.BatchNorm2d(12)
         )
         
-        # Classifier (efficient)
+        # Classifier
         self.classifier = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(10 * 7 * 7, 32),  # Smaller but focused
+            nn.Linear(12 * 7 * 7, 32),
             nn.BatchNorm1d(32),
             nn.LeakyReLU(0.1),
             nn.Linear(32, 10)
@@ -60,17 +60,17 @@ class SimpleCNN(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         
-        # First residual with strong connection
+        # First residual with stronger connection
         identity = x
         x = self.res1(x)
-        x = x + 1.5 * identity  # Stronger early residual
+        x = x + 1.75 * identity  # Increased residual strength
         
         x = self.trans1(x)
         
         # Second residual
         identity = x
         x = self.res2(x)
-        x = x + identity
+        x = x + 1.25 * identity  # Added scaling here too
         
         x = self.classifier(x)
         return x
