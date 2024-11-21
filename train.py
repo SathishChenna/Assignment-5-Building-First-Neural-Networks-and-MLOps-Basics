@@ -3,25 +3,30 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
 from model.network import SimpleCNN
+from datetime import datetime
+import os
 
 def train():
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    # Define transformations
+    # Enhanced transformations
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
+        transforms.Normalize((0.1307,), (0.3081,)),
     ])
     
     # Load MNIST dataset
     train_dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=128, shuffle=True)
     
     # Initialize model
     model = SimpleCNN().to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters())
+    # Changed learning rate and added weight decay
+    optimizer = optim.Adam(model.parameters(), lr=0.002, weight_decay=1e-5)
+    # Add learning rate scheduler
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=2, verbose=True)
     
     # Training loop
     num_epochs = 1
@@ -37,6 +42,8 @@ def train():
             output = model(data)
             loss = criterion(output, target)
             loss.backward()
+            # Add gradient clipping
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             
             # Calculate accuracy
@@ -59,15 +66,18 @@ def train():
         print(f'\nEpoch {epoch} Summary:')
         print(f'Average Loss: {epoch_loss:.6f}')
         print(f'Final Accuracy: {epoch_accuracy:.2f}%\n')
+        
+        # Update learning rate based on accuracy
+        scheduler.step(epoch_accuracy)
     
-    # Save the model
-    torch.save(model.state_dict(), 'saved_models/model.pth')
+    # Save the model with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    save_path = f'saved_models/model_{timestamp}.pth'
+    torch.save(model.state_dict(), save_path)
     
     return epoch_accuracy, epoch_loss
 
 if __name__ == '__main__':
-    # Create directory for saved models if it doesn't exist
-    import os
     os.makedirs('saved_models', exist_ok=True)
     final_accuracy, final_loss = train()
     print(f"Training completed!")
