@@ -4,52 +4,52 @@ class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
         
-        # Initial conv blocks - slightly stronger
+        # Initial conv blocks
         self.conv1 = nn.Sequential(
-            nn.Conv2d(1, 8, kernel_size=5, padding=2),  # Keep 8 channels
-            nn.BatchNorm2d(8),
+            nn.Conv2d(1, 8, kernel_size=5, padding=2),
+            nn.BatchNorm2d(8, track_running_stats=False),
             nn.LeakyReLU(0.1),
             nn.Conv2d(8, 8, kernel_size=3, padding=1),
-            nn.BatchNorm2d(8),
+            nn.BatchNorm2d(8, track_running_stats=False),
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2)
         )
         
-        # First residual block (efficient bottleneck)
+        # First residual block
         self.res1 = nn.Sequential(
             nn.Conv2d(8, 6, kernel_size=1),
-            nn.BatchNorm2d(6),
+            nn.BatchNorm2d(6, track_running_stats=False),
             nn.LeakyReLU(0.1),
             nn.Conv2d(6, 6, kernel_size=3, padding=1),
-            nn.BatchNorm2d(6),
+            nn.BatchNorm2d(6, track_running_stats=False),
             nn.LeakyReLU(0.1),
             nn.Conv2d(6, 8, kernel_size=1),
-            nn.BatchNorm2d(8)
+            nn.BatchNorm2d(8, track_running_stats=False)
         )
         
         # Transition block
         self.trans1 = nn.Sequential(
             nn.LeakyReLU(0.1),
             nn.MaxPool2d(2),
-            nn.Conv2d(8, 12, kernel_size=1),  # Increased to 12
-            nn.BatchNorm2d(12),
+            nn.Conv2d(8, 12, kernel_size=1),
+            nn.BatchNorm2d(12, track_running_stats=False),
             nn.LeakyReLU(0.1)
         )
         
-        # Second residual block (grouped conv)
+        # Second residual block
         self.res2 = nn.Sequential(
-            nn.Conv2d(12, 12, kernel_size=3, padding=1, groups=3),  # 4 channels per group
-            nn.BatchNorm2d(12),
+            nn.Conv2d(12, 12, kernel_size=3, padding=1, groups=3),
+            nn.BatchNorm2d(12, track_running_stats=False),
             nn.LeakyReLU(0.1),
             nn.Conv2d(12, 12, kernel_size=3, padding=1, groups=3),
-            nn.BatchNorm2d(12)
+            nn.BatchNorm2d(12, track_running_stats=False)
         )
         
         # Classifier
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(12 * 7 * 7, 32),
-            nn.BatchNorm1d(32),
+            nn.BatchNorm1d(32, track_running_stats=False),
             nn.LeakyReLU(0.1),
             nn.Linear(32, 10)
         )

@@ -10,18 +10,22 @@ def test_parameter_count():
 
 def test_input_shape():
     model = SimpleCNN()
+    model.eval()
     test_input = torch.randn(1, 1, 28, 28)
-    try:
-        output = model(test_input)
-        assert True, "Model successfully processes 28x28 input"
-    except:
-        assert False, "Model failed to process 28x28 input"
+    with torch.no_grad():
+        try:
+            output = model(test_input)
+            assert output.shape == (1, 10), f"Output shape is {output.shape}, should be (1, 10)"
+        except Exception as e:
+            assert False, f"Model failed to process 28x28 input: {str(e)}"
 
 def test_output_shape():
     model = SimpleCNN()
-    test_input = torch.randn(1, 1, 28, 28)
-    output = model(test_input)
-    assert output.shape[1] == 10, f"Output shape is {output.shape[1]}, should be 10"
+    model.eval()
+    test_input = torch.randn(4, 1, 28, 28)
+    with torch.no_grad():
+        output = model(test_input)
+        assert output.shape[1] == 10, f"Output shape is {output.shape[1]}, should be 10"
 
 def test_model_accuracy():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -36,7 +40,7 @@ def test_model_accuracy():
         pytest.skip("No saved model found to test accuracy")
     
     latest_model = max(model_files, key=os.path.getctime)
-    model.load_state_dict(torch.load(latest_model))
+    model.load_state_dict(torch.load(latest_model, weights_only=True))
     
     # Load test data
     transform = transforms.Compose([
