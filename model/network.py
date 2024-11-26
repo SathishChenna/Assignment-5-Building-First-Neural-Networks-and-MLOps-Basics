@@ -63,14 +63,14 @@ class SimpleCNN(nn.Module):
         # First residual with stronger connection
         identity = x
         x = self.res1(x)
-        x = x + 1.75 * identity  # Increased residual strength
+        x = x + 2.5 * identity  # Increased scaling for faster feature learning
         
         x = self.trans1(x)
         
-        # Second residual
+        # Second residual with stronger connection
         identity = x
         x = self.res2(x)
-        x = x + 1.25 * identity  # Added scaling here too
+        x = x + 2.0 * identity  # Increased scaling here too
         
         x = self.classifier(x)
         return x

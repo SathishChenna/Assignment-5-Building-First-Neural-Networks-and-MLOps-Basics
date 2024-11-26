@@ -19,7 +19,7 @@ def train():
     train_dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
     train_loader = torch.utils.data.DataLoader(
         train_dataset, 
-        batch_size=128,
+        batch_size=64,
         shuffle=True,
         num_workers=2
     )
@@ -28,8 +28,13 @@ def train():
     model = SimpleCNN().to(device)
     criterion = nn.CrossEntropyLoss()
     
-    # Using Adam optimizer
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    # Using Adam optimizer with adjusted parameters
+    optimizer = optim.Adam(
+        model.parameters(), 
+        lr=0.002,  # Slightly higher initial LR
+        betas=(0.9, 0.999),
+        eps=1e-8
+    )
     
     # Cosine annealing scheduler
     scheduler = optim.lr_scheduler.CosineAnnealingLR(
