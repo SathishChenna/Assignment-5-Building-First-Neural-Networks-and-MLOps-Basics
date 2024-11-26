@@ -11,11 +11,11 @@ def test_parameter_count():
 def test_input_shape():
     model = SimpleCNN()
     model.eval()
-    test_input = torch.randn(1, 1, 28, 28)
+    test_input = torch.randn(2, 1, 28, 28)
     with torch.no_grad():
         try:
             output = model(test_input)
-            assert output.shape == (1, 10), f"Output shape is {output.shape}, should be (1, 10)"
+            assert output.shape == (2, 10), f"Output shape is {output.shape}, should be (2, 10)"
         except Exception as e:
             assert False, f"Model failed to process 28x28 input: {str(e)}"
 

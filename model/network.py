@@ -45,11 +45,11 @@ class SimpleCNN(nn.Module):
             nn.BatchNorm2d(12, track_running_stats=False)
         )
         
-        # Classifier
+        # Classifier with InstanceNorm1d instead of BatchNorm1d
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(12 * 7 * 7, 32),
-            nn.BatchNorm1d(32, track_running_stats=False),
+            nn.InstanceNorm1d(32),
             nn.LeakyReLU(0.1),
             nn.Linear(32, 10)
         )
